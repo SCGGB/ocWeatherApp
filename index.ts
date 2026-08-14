@@ -4,6 +4,24 @@ const baseDir = import.meta.dir.startsWith("B:\\~BUN") ? dirname(process.execPat
 const CONFIG_PATH = `${baseDir}\\weather-cli.json`;
 const SEPARATOR = "════════════════════════════════════════";
 
+const USE_COLOR = process.stdout.isTTY ?? false;
+
+function cyan(text: string): string {
+  return USE_COLOR ? `\x1b[36m${text}\x1b[0m` : text;
+}
+
+function amarillo(text: string): string {
+  return USE_COLOR ? `\x1b[33m${text}\x1b[0m` : text;
+}
+
+function verde(text: string): string {
+  return USE_COLOR ? `\x1b[32m${text}\x1b[0m` : text;
+}
+
+function rojo(text: string): string {
+  return USE_COLOR ? `\x1b[31m${text}\x1b[0m` : text;
+}
+
 type City = {
   name: string;
   country?: string;
@@ -116,17 +134,17 @@ function formatTemp(temperature: number, unit: Config["unit"]): string {
 
 function printMenu(config: Config): void {
   console.log("");
-  console.log(SEPARATOR);
-  console.log("         WEATHER CLI");
-  console.log(SEPARATOR);
-  console.log("  1. Clima de ciudad default");
-  console.log(`  2. Clima de todas las ciudades (${config.cities.length})`);
-  console.log("  3. Buscar y agregar ciudad");
-  console.log("  4. Eliminar ciudad");
-  console.log("  5. Establecer ciudad default");
-  console.log(`  8. Ajustes (${unitSymbol(config.unit)})`);
-  console.log("  9. Salir");
-  console.log(SEPARATOR);
+  console.log(cyan(SEPARATOR));
+  console.log(cyan("         WEATHER CLI"));
+  console.log(cyan(SEPARATOR));
+  console.log(cyan("  1. Clima de ciudad default"));
+  console.log(cyan(`  2. Clima de todas las ciudades (${config.cities.length})`));
+  console.log(cyan("  3. Buscar y agregar ciudad"));
+  console.log(cyan("  4. Eliminar ciudad"));
+  console.log(cyan("  5. Establecer ciudad default"));
+  console.log(cyan(`  8. Ajustes (${unitSymbol(config.unit)})`));
+  console.log(cyan("  9. Salir"));
+  console.log(cyan(SEPARATOR));
 }
 
 function printCityList(cities: City[]): void {
@@ -135,12 +153,12 @@ function printCityList(cities: City[]): void {
 
 async function showWeather(city: City, unit: Config["unit"]): Promise<void> {
   const temperature = await getTemperature(city, unit);
-  console.log(`${cityLabel(city)}: ${formatTemp(temperature, unit)}`);
+  console.log(`${cityLabel(city)}: ${amarillo(formatTemp(temperature, unit))}`);
 }
 
 async function weatherDefault(config: Config): Promise<void> {
   if (!config.defaultCity) {
-    console.log("No hay ciudad default configurada. Usa la opción 5 para establecerla.");
+    console.log(rojo("No hay ciudad default configurada. Usa la opción 5 para establecerla."));
     return;
   }
   await showWeather(config.defaultCity, config.unit);
@@ -148,7 +166,7 @@ async function weatherDefault(config: Config): Promise<void> {
 
 async function weatherAll(config: Config): Promise<void> {
   if (config.cities.length === 0) {
-    console.log("No hay ciudades guardadas. Usa la opción 3 para agregar una.");
+    console.log(rojo("No hay ciudades guardadas. Usa la opción 3 para agregar una."));
     return;
   }
   for (const city of config.cities) {
@@ -160,30 +178,30 @@ async function addCity(config: Config): Promise<void> {
   const name = await ask("Nombre de la ciudad a buscar: ");
   const city = await searchCity(name);
   if (!city) {
-    console.log(`No se encontró ninguna ciudad llamada "${name}".`);
+    console.log(rojo(`No se encontró ninguna ciudad llamada "${name}".`));
     return;
   }
   const label = city.country ? `${city.name}, ${city.country}` : city.name;
   const confirm = await ask(`¿Agregar "${label}"? (s/n): `);
   if (confirm.toLowerCase() !== "s") {
-    console.log("Cancelado.");
+    console.log(rojo("Cancelado."));
     return;
   }
   config.cities.push(city);
   await saveConfig(config);
-  console.log("Ciudad agregada.");
+  console.log(verde("Ciudad agregada."));
 }
 
 async function removeCity(config: Config): Promise<void> {
   if (config.cities.length === 0) {
-    console.log("No hay ciudades guardadas.");
+    console.log(rojo("No hay ciudades guardadas."));
     return;
   }
   printCityList(config.cities);
   const pick = Number(await ask("Número de la ciudad a eliminar: ")) - 1;
   const city = config.cities[pick];
   if (!city) {
-    console.log("Opción inválida.");
+    console.log(rojo("Opción inválida."));
     return;
   }
   config.cities.splice(pick, 1);
@@ -193,33 +211,33 @@ async function removeCity(config: Config): Promise<void> {
     config.defaultCity.longitude === city.longitude
   ) {
     config.defaultCity = null;
-    console.log("La ciudad default fue eliminada y quedó sin configurar.");
+    console.log(rojo("La ciudad default fue eliminada y quedó sin configurar."));
   }
   await saveConfig(config);
-  console.log(`"${cityLabel(city)}" eliminada.`);
+  console.log(verde(`"${cityLabel(city)}" eliminada.`));
 }
 
 async function setDefault(config: Config): Promise<void> {
   if (config.cities.length === 0) {
-    console.log("No hay ciudades guardadas. Usa la opción 3 para agregar una.");
+    console.log(rojo("No hay ciudades guardadas. Usa la opción 3 para agregar una."));
     return;
   }
   printCityList(config.cities);
   const pick = Number(await ask("Número de la ciudad a establecer como default: ")) - 1;
   const city = config.cities[pick];
   if (!city) {
-    console.log("Opción inválida.");
+    console.log(rojo("Opción inválida."));
     return;
   }
   config.defaultCity = { ...city };
   await saveConfig(config);
-  console.log(`Ciudad default establecida: ${cityLabel(city)}.`);
+  console.log(verde(`Ciudad default establecida: ${cityLabel(city)}.`));
 }
 
 async function toggleUnit(config: Config): Promise<void> {
   config.unit = config.unit === "celsius" ? "fahrenheit" : "celsius";
   await saveConfig(config);
-  console.log(`Unidad configurada: ${unitSymbol(config.unit)}.`);
+  console.log(verde(`Unidad configurada: ${unitSymbol(config.unit)}.`));
 }
 
 async function main(): Promise<void> {
@@ -248,15 +266,15 @@ async function main(): Promise<void> {
           await toggleUnit(config);
           break;
         case "9":
-          console.log("¡Hasta luego!");
+          console.log(verde("¡Hasta luego!"));
           return;
         default:
-          console.log("Opción inválida.");
+          console.log(rojo("Opción inválida."));
       }
     }
   } catch (error) {
     if (!(error instanceof InputClosed)) {
-      console.log(error instanceof Error ? error.message : "Error inesperado.");
+      console.log(rojo(error instanceof Error ? error.message : "Error inesperado."));
     }
   }
 }
