@@ -1,6 +1,8 @@
 # dependencies (bun install)
 node_modules
 
+# build
+weather
 # output
 out
 dist
@@ -9,6 +11,12 @@ dist
 # code coverage
 coverage
 *.lcov
+
+# app state
+weather-cli.json
+
+# compiled binary
+weather-cli.exe
 
 # logs
 logs
